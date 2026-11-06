@@ -1,5 +1,9 @@
 # dsh-session-batch
 
+[![CI](https://github.com/ajsney764-blip/dsh-session-batch/actions/workflows/ci.yml/badge.svg)](https://github.com/ajsney764-blip/dsh-session-batch/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![DSH](https://img.shields.io/badge/DSH-0.2.x-brightgreen)](https://github.com/deepseek-ai/deepseek-harness)
+
 [English](README.md) | 中文
 
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)(DSH)用的插件:侧栏多选,**一次删除多个对话的聊天记录**,并可**同时删除这些对话产出的文件**;同时把会话状态说清楚 —— **运行中**(此刻真的在干活)与**内存中**(只是被打开过、宿主还留着它)分开显示。

@@ -15,6 +15,8 @@ fixed. Kept in the repository because the reasoning is more useful than the diff
 | 6 | Misleading confirm label | After opting into artifact deletion the button still said "delete chat records". | The label changes to "…(含 N 个文件)" / "and N files". |
 | 7 | Retry paths could accumulate duplicates | Repeated failures stacked the same path. | Merged and deduped by `path\|cwd` before writing. |
 | 8 | Test state leaked between scenarios | A pending entry from one scenario broke a later assertion. | The assertion targets the session under test instead of the whole manifest; no production change. |
+| 9 | **Concurrent state writes failed with `ENOENT`** (found by CI, fixed in 0.2.2) | `writeManifest` / `writeRemoved` named their temp file after the process id, so two writers used the same path; the first rename won and the second failed. The startup retry pass runs on a timer and genuinely overlaps a user batch. Reproduced on three of four CI matrix legs. | Temp names are unique per write, and every state read-modify-write is serialised through a queue. Pinned by 25 concurrent upserts, removals and tombstone writes. |
+| 10 | Test teardown raced the plugin's own timer | Cleaning up the temporary `DSH_HOME` while the 3 s timer wrote state left an `ENOTEMPTY` directory. | The suite disposes the plugin (runs its effect cleanups) before removing the directory. |
 
 ## Things re-checked and found sound
 

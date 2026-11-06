@@ -1,5 +1,9 @@
 # dsh-session-batch
 
+[![CI](https://github.com/ajsney764-blip/dsh-session-batch/actions/workflows/ci.yml/badge.svg)](https://github.com/ajsney764-blip/dsh-session-batch/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![DSH](https://img.shields.io/badge/DSH-0.2.x-brightgreen)](https://github.com/deepseek-ai/deepseek-harness)
+
 [English](README.md) | [中文](README.zh-CN.md)
 
 A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) plugin that adds a sidebar panel for **deleting the chat records of many conversations at once**, optionally **together with the files each conversation produced**, and that reports an **honest session status**: actually running versus merely kept in host memory.
