@@ -108,6 +108,7 @@ let records = []
 let workspaces = []
 
 const routes = new Map()
+const cleanups = []
 
 const ctx = {
   get(name) {
@@ -137,7 +138,11 @@ const ctx = {
     },
   },
   connection: { fetch: { register(route) { routes.set(route.path, route); return () => {} } } },
-  effect(fn) { return fn() },
+  effect(fn) {
+    const cleanup = fn()
+    if (typeof cleanup === 'function') cleanups.push(cleanup)
+    return cleanup
+  },
 }
 
 const module = await import('../index.js')
@@ -320,5 +325,42 @@ const tooMany = Array.from({ length: 201 }, (_, index) => `session-${index}`)
 assert.equal((await call('/api/session-batch.delete', { sessionIds: tooMany })).status, 400, 'batch size is capped')
 assert.equal((await call('/api/session-batch.preview-artifacts', { sessionIds: [] })).status, 400)
 
-await fs.rm(HOME, { recursive: true, force: true })
+// ---------------------------------------------------------------------------
+// 9. Concurrent state writes neither collide nor lose entries
+// ---------------------------------------------------------------------------
+
+// A startup retry pass and a user batch can write at the same time. Before the
+// write queue existed this produced `ENOENT ... rename pending.json.<pid>.tmp`.
+const state = module.__testing
+assert.ok(state, 'the state helpers must be exposed for this test')
+
+await Promise.all(Array.from({ length: 25 }, (_, index) =>
+  state.upsertPending({ id: `race-${index}`, sessionIds: [`race-${index}`], createdAt: Date.now() })))
+const afterConcurrent = await state.readManifest()
+assert.equal(
+  afterConcurrent.filter((entry) => String(entry.id).startsWith('race-')).length,
+  25,
+  'concurrent upserts must all survive',
+)
+
+await Promise.all(Array.from({ length: 25 }, (_, index) => state.removePending(`race-${index}`)))
+assert.equal(
+  (await state.readManifest()).filter((entry) => String(entry.id).startsWith('race-')).length,
+  0,
+  'concurrent removals must all apply',
+)
+
+await Promise.all(Array.from({ length: 25 }, (_, index) => state.addRemoved([`race-tombstone-${index}`])))
+assert.equal(
+  (await state.readRemoved()).filter((id) => String(id).startsWith('race-tombstone-')).length,
+  25,
+  'concurrent tombstone writes must all survive',
+)
+
+// Dispose the plugin first: its startup timer writes state and would otherwise
+// race the cleanup below (which is exactly what it is designed to survive).
+for (const cleanup of cleanups.reverse()) {
+  try { cleanup() } catch { /* ignore */ }
+}
+await fs.rm(HOME, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
 console.log('host: all scenarios passed')

@@ -24,6 +24,20 @@ import { pathToFileURL } from 'node:url'
 export const name = 'session-batch'
 export const inject = ['connection', 'sessionQuery', 'workspaceRegistry']
 
+/**
+ * Internal handles for the test suite. Not part of the plugin's supported
+ * surface: they exist so the state helpers can be exercised concurrently, which
+ * is the only way to pin the write-serialisation guarantee.
+ */
+export const __testing = {
+  upsertPending,
+  removePending,
+  readManifest,
+  addRemoved,
+  forgetRemoved,
+  readRemoved,
+}
+
 const HOME = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')
 const SESSIONS_ROOT = process.env.DSH_SESSIONS_ROOT || path.join(HOME, 'sessions')
 const STATE_DIR = path.join(HOME, 'session-batch')
@@ -120,6 +134,30 @@ function delay(ms) {
 // Pending manifest and removal tombstones
 // ---------------------------------------------------------------------------
 
+/**
+ * Serialise every state read-modify-write.
+ *
+ * Two writers genuinely coexist: a user batch (inside `exclusive`) and the
+ * startup retry pass, which runs on a timer. Without this queue they could
+ * interleave, and because the atomic-write temp name is unique per write, the
+ * loser of the race would see its temp file already renamed away (ENOENT).
+ */
+let stateQueue = Promise.resolve()
+
+function withStateLock(operation) {
+  const next = stateQueue.then(operation, operation)
+  stateQueue = next.then(() => undefined, () => undefined)
+  return next
+}
+
+let tempCounter = 0
+
+/** A temp path no other write in this process can collide with. */
+function tempPathFor(target) {
+  tempCounter += 1
+  return `${target}.${process.pid}.${tempCounter}.${Math.random().toString(36).slice(2, 8)}.tmp`
+}
+
 async function readManifest() {
   try {
     const parsed = JSON.parse(await fs.readFile(MANIFEST_PATH, 'utf8'))
@@ -132,17 +170,24 @@ async function readManifest() {
 
 async function writeManifest(entries) {
   await fs.mkdir(STATE_DIR, { recursive: true })
-  const temporary = `${MANIFEST_PATH}.${process.pid}.tmp`
+  const temporary = tempPathFor(MANIFEST_PATH)
   await fs.writeFile(temporary, JSON.stringify({ version: 1, entries }, null, 2), 'utf8')
   await fs.rename(temporary, MANIFEST_PATH)
 }
 
-async function upsertPending(entry) {
-  await writeManifest([...(await readManifest()).filter((item) => item.id !== entry.id), entry])
+function upsertPending(entry) {
+  return withStateLock(async () => {
+    const entries = (await readManifest()).filter((item) => item.id !== entry.id)
+    entries.push(entry)
+    await writeManifest(entries)
+  })
 }
 
-async function removePending(id) {
-  await writeManifest((await readManifest()).filter((item) => item.id !== id))
+function removePending(id) {
+  return withStateLock(async () => {
+    const entries = (await readManifest()).filter((item) => item.id !== id)
+    await writeManifest(entries)
+  })
 }
 
 /**
@@ -166,20 +211,24 @@ async function readRemoved() {
 async function writeRemoved(ids) {
   const unique = [...new Set(ids.map(String).filter(Boolean))]
   await fs.mkdir(STATE_DIR, { recursive: true })
-  const temporary = `${REMOVED_PATH}.${process.pid}.tmp`
+  const temporary = tempPathFor(REMOVED_PATH)
   await fs.writeFile(temporary, JSON.stringify({ version: 1, ids: unique }, null, 2), 'utf8')
   await fs.rename(temporary, REMOVED_PATH)
 }
 
-async function addRemoved(ids) {
-  if (ids.length === 0) return
-  await writeRemoved([...(await readRemoved()), ...ids])
+function addRemoved(ids) {
+  if (ids.length === 0) return Promise.resolve()
+  return withStateLock(async () => {
+    await writeRemoved([...(await readRemoved()), ...ids])
+  })
 }
 
-async function forgetRemoved(ids) {
-  if (ids.length === 0) return
-  const drop = new Set(ids.map(String))
-  await writeRemoved((await readRemoved()).filter((id) => !drop.has(id)))
+function forgetRemoved(ids) {
+  if (ids.length === 0) return Promise.resolve()
+  return withStateLock(async () => {
+    const drop = new Set(ids.map(String))
+    await writeRemoved((await readRemoved()).filter((id) => !drop.has(id)))
+  })
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-06
+
+### Fixed
+
+- **Concurrent state writes could fail with `ENOENT`.** The startup retry pass
+  (`retryPending`, on a 3 s timer) and a user batch can write the pending
+  manifest at the same time; because the atomic-write temp name was unique per
+  process rather than per write, the loser of the race found its temp file
+  already renamed away. Reproduced in CI on three of four matrix legs. Temp names
+  are now unique per write, and every state read-modify-write is serialised
+  through a queue.
+- Test teardown raced the plugin's own timer, which could leave the temporary
+  `$DSH_HOME` behind; the suite now disposes the plugin before cleaning up.
+
+### Changed
+
+- Suites run through `scripts/run-tests.mjs`, which re-emits the tail of a
+  failing suite as GitHub annotations so a failure is readable from the checks
+  API; CI matrix is now node 20 and 24 on Linux and Windows.
+
 ## [0.2.1] - 2026-11-05
 
 ### Added
@@ -52,7 +72,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   finished for the next start.
 - Host-side test suite covering the pipeline against stub services.
 
-[Unreleased]: https://github.com/ajsney764-blip/dsh-session-batch/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/ajsney764-blip/dsh-session-batch/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/ajsney764-blip/dsh-session-batch/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ajsney764-blip/dsh-session-batch/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ajsney764-blip/dsh-session-batch/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ajsney764-blip/dsh-session-batch/releases/tag/v0.1.0

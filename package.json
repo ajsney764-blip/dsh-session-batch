@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-batch",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Batch-delete DeepSeek Harness session chat records (optionally with the files each conversation produced), and show whether a conversation is really running or only kept in host memory.",
   "keywords": [
     "dsh",
