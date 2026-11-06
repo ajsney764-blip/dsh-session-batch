@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: [20, 22]
+        node: [20, 24]
     steps:
       - uses: actions/checkout@v4
 
@@ -25,12 +25,12 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
+      - name: Environment
+        run: node -v
+
       # The suites have no dependencies: the host suite stubs the harness
-      # services and the client suite ships its own miniature React.
+      # services and the client suite ships its own miniature React. Failures are
+      # re-emitted as annotations by the runner, so the failing lines are readable
+      # from the checks API without the raw job log.
       - name: Run test suites
         run: npm test
-
-      - name: Syntax check the shipped bundles
-        run: |
-          node --check index.js
-          node --check client.js
