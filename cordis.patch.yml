@@ -1,0 +1,7 @@
+# dsh-session-batch bundle patch
+#
+# Inserts one row into the web profile. It registers a sidebar panel and owns
+# nothing else: session records only, no workspace files.
+- insert:
+    - id: session-batch
+      name: dsh-session-batch

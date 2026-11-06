@@ -1,0 +1,67 @@
+name: Bug report
+description: Something went wrong while listing or deleting conversations
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. This plugin deletes data permanently, so please be
+        precise about **what** was deleted and **what you expected**.
+
+        Do not paste conversation contents, credentials, or full filesystem paths
+        that reveal personal information.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: From `package.json` (or the plugin page in DSH).
+      placeholder: 0.2.1
+    validations:
+      required: true
+
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH version and OS
+      placeholder: 0.2.0-rc.2 on Windows 11
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you clicked, what you expected, what actually happened.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which scope did you use?
+      options:
+        - Chat records only
+        - Chat records and produced files
+        - Listing / status badges only (no deletion)
+        - Install / upgrade
+    validations:
+      required: true
+
+  - type: textarea
+    id: pending
+    attributes:
+      label: Retry manifest (if any)
+      description: |
+        If something could not be deleted, paste `$DSH_HOME/session-batch/pending.json`
+        with paths shortened.
+      render: json
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Install log (if relevant)
+      description: |
+        The tail of `install-log.txt` next to the install script, with personal
+        paths shortened.
+      render: text

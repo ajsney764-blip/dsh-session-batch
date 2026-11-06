@@ -1,0 +1,77 @@
+{
+  "name": "dsh-session-batch",
+  "version": "0.2.1",
+  "description": "Batch-delete DeepSeek Harness session chat records (optionally with the files each conversation produced), and show whether a conversation is really running or only kept in host memory.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "session",
+    "batch",
+    "delete",
+    "purge",
+    "artifacts",
+    "cordis"
+  ],
+  "license": "MIT",
+  "author": "ajsney764-blip",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/host.test.mjs && node test/client.test.mjs",
+    "test:host": "node test/host.test.mjs",
+    "test:client": "node test/client.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.0-rc.2": "compatible"
+      }
+    }
+  },
+  "peerDependencies": {
+    "dsh-session-artifacts": ">=0.7.0"
+  },
+  "peerDependenciesMeta": {
+    "dsh-session-artifacts": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajsney764-blip/dsh-session-batch.git"
+  },
+  "homepage": "https://github.com/ajsney764-blip/dsh-session-batch#readme",
+  "bugs": {
+    "url": "https://github.com/ajsney764-blip/dsh-session-batch/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

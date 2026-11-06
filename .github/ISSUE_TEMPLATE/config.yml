@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Artifact attribution questions
+    url: https://github.com/ShirohaChan/dsh-session-artifacts/issues
+    about: Which files count as produced by a conversation is decided by dsh-session-artifacts, not by this plugin.
+  - name: DeepSeek Harness itself
+    url: https://github.com/deepseek-ai/deepseek-harness
+    about: Bugs in the harness, its slots or its session persistence belong upstream.
